@@ -5,6 +5,7 @@
 
 #include "./lib/timeStr.h"
 #include "./lib/mqttLib.h"
+
 /*********************************************************/
 /*********************************************************/
 /*                    UART INCLUDE/DEFINE                */
@@ -68,7 +69,21 @@ void uartDisconnect();
 void testPrint();
 
 
+void connlost(void *context, char *cause)
+{
+	//resubscribe
+	//printf("re Subscribe");
+	
+}
 
+void connected()
+{
+	
+	my_mqttSubscribe(TOPIC);
+	my_mqttSendMessage("hallo","MQTT Examples",strlen("Hello World!"));
+	printf("Subscribed\n");
+	
+}
 
 void delivered(void *context, MQTTClient_deliveryToken dt)
 {
@@ -113,17 +128,18 @@ int main(int argc, char* argv[])
 	my_mqttSetup(serverAdresse,clientID,qos,timeout);
 	my_mqttSetOnMessageArivedHandeler(msgarrvd);
 	my_mqttSetOnMessageDelivertHandeler(delivered);
+	my_mqttSetOnConnectedHandeler(connected);
 	
 	rc=my_mqttConnect();
 	if(rc != MQTTCLIENT_SUCCESS)
 		exit(EXIT_FAILURE);	
 	
-	my_mqttSubscribe(TOPIC);
-	my_mqttSendMessage("hallo","MQTT Examples",sizeof("Hello World!"));
+	my_mqttSetOnConnectedHandeler(connected);
 	
 	
 
     uartConnect();
+	
 
 	
 		

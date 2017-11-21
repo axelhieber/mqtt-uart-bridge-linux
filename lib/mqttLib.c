@@ -5,7 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <MQTTClient.h>
-
+#include "./timeStr.h"
 
 
 static MQTTClient client;
@@ -54,8 +54,8 @@ int  my_mqttSetup(const char* serverAdress_setup, const char* clientID_setup, in
 	MQTTClient_create		(&client, serverAdress, clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL);    // https://goo.gl/YQeMNQ
 	MQTTClient_setCallbacks (client, NULL , priv_connlost, priv_msgarrvd, priv_delivered);					         // https://goo.gl/qT8zb7
 
-
-	my_mqttSetOnConnectedHandeler(mqttHandlerDefault);
+	my_mqttSetOnConnectionLostHandeler(my_mqttAutoReconnect);
+	//my_mqttSetOnConnectedHandeler(mqttHandlerDefault);
 	// my_mqttSetOnConnectionLostHandeler(my_mqttAutoReconnect);
 	// my_mqttSetOnMessageArivedHandeler(mqttArivedHandlerDefault);
 	// my_mqttSetOnMessageDelivertHandeler(mqttHandlerDefault);
@@ -68,6 +68,15 @@ int my_mqttConnect()
         printf("Failed to connect, return code %d\n", rc);
         
     }
+	else
+	{
+		if(mqttOnConnectedHandeler)
+		{
+			mqttOnConnectedHandeler();
+		}
+
+	}
+		
 	return rc;
 }
 void my_mqttDisconnect()
@@ -84,7 +93,7 @@ int my_mqttSendMessage(char* payload, const char* topic, int payload_size)
     pubmsg.qos = qos;
 	pubmsg.retained = 0;
 	MQTTClient_publishMessage(client, topic, &pubmsg, &token);
-
+	
     return rc;
 }
 void my_mqttSubscribe(const char* topic)
@@ -124,7 +133,6 @@ void my_mqttAutoReconnect(char *cause)
 {
 	int x=0;
 	int rc=0;
-    printf("\nConnection lost cause: %s\n", cause);
 	
 	// struct MQTT_ALL_S *ccc;
 	
@@ -136,7 +144,9 @@ void my_mqttAutoReconnect(char *cause)
 		printf("try reconn\n");
 		sleep(1);
 	}
-	printf("conn regaint\n");
+	printf("connection fully regaint at %s\n",getTimeString());
+	my_mqttSubscribe("hng12/kg/verteiler/home8");
+
 }
 	
 
@@ -153,6 +163,8 @@ void my_mqttAutoReconnect(char *cause)
 
 static void priv_connlost(void *context, char *cause)
 {
+	printf("Connection lost: cause: %s | at %s\n", cause, getTimeString());
+	//my_mqttAutoReconnect();
 	
 	if(mqttOnConnectionLostHandeler)
     {
